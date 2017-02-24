@@ -3,12 +3,14 @@ import lmdb # install lmdb by "pip install lmdb"
 import cv2
 import numpy as np
 
-
 def checkImageIsValid(imageBin):
     if imageBin is None:
         return False
     imageBuf = np.fromstring(imageBin, dtype=np.uint8)
-    img = cv2.imdecode(imageBuf, cv2.IMREAD_GRAYSCALE)
+    try:
+        img = cv2.imdecode(imageBuf, cv2.IMREAD_GRAYSCALE)
+    except cv2.error as e:
+        raise
     imgH, imgW = img.shape[0], img.shape[1]
     if imgH * imgW == 0:
         return False
@@ -46,10 +48,16 @@ def createDataset(outputPath, imagePathList, labelList, lexiconList=None, checkV
         with open(imagePath, 'r') as f:
             imageBin = f.read()
         if checkValid:
-            if not checkImageIsValid(imageBin):
-                print('%s is not a valid image' % imagePath)
+            try:
+                if not checkImageIsValid(imageBin):
+                    print('%s is not a valid image' % imagePath)
+                    continue
+            except cv2.error as e:
+                print ('%s is not a valid image' % imagePath)
                 continue
-
+            except Exception as e:
+                print ('%s is not a valid image' % imagePath)
+                continue;
         imageKey = 'image-%09d' % cnt
         labelKey = 'label-%09d' % cnt
         cache[imageKey] = imageBin
@@ -67,6 +75,8 @@ def createDataset(outputPath, imagePathList, labelList, lexiconList=None, checkV
     writeCache(env, cache)
     print('Created dataset with %d samples' % nSamples)
 
-
 if __name__ == '__main__':
-    pass
+    outputPath = '/opt/Synth/train'
+    imagePathList = [line.rstrip('\n') for line in open('tr_image_path_list.txt')]
+    labelList = [line.split("_")[1] for line in open("tr_image_path_list.txt")]
+    createDataset(outputPath, imagePathList, labelList)

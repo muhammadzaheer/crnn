@@ -118,3 +118,50 @@ function DatasetLmdb:nextBatch()
     collectgarbage()
     return images, labels
 end
+
+function DatasetLmdb:sanitize(startIdx, endIdx)
+    local imgW, imgH = 100, 32
+    local imageList, labelList = {}, {}
+    local faultyList = {}
+    local curr = 1
+    local success, msg, rc = self.env:transaction(function(txn)
+        for idx = startIdx, endIdx do
+            local imageKey = string.format('image-%09d', idx)
+            local labelKey = string.format('label-%09d', idx)
+            local imageBin = txn:get(imageKey)
+            local labelBin = txn:get(labelKey)
+            imageList[curr] = tostring(imageBin)
+            labelList[curr] = tostring(labelBin)
+            curr = curr + 1
+        end
+    end)
+    -- local images = torch.ByteTensor(endIdx - startIdx + 1, 1, imgH, imgW)
+    local faultyCount = 0
+    for i = 1, curr-1 do
+        local imgBin = imageList[i]
+        local imageByteLen = string.len(imgBin)
+        local imageBytes = torch.ByteTensor(imageByteLen):fill(0)
+        imageBytes:storage():string(imgBin)
+        --[[
+        local img = nil
+        local status, err = pcall(function () img = Image.decompress(imageBytes, 3, 'byte') end
+        if not status then
+            print ('Error at: ', i + startIdx - 1, '(',startIdx, endIdx,')')
+            print (err)
+            faultyCount = faultyCount + 1
+            faultyList[faultyCount] = i + startIdx - 1
+        else
+            img = Image.rgb2y(img)
+            img = Image.scale(img, imgW, imgH)
+            images[i]:copy(img)
+        end
+        --]]
+        local img = Image.decompress(imageBytes, 3, 'byte')
+        -- img = Image.rgb2y(img)
+        -- img = Image.scale(img, imgW, imgH)
+        -- images[i]:copy(img)
+    end
+    print (startIdx, endIdx)
+    collectgarbage()
+    return faultyList
+end
