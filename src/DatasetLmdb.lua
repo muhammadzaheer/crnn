@@ -82,12 +82,23 @@ function DatasetLmdb:allImageLabel(nSampleMax)
     return images, labels
 end
 
-
+function Set (list)
+    local set = {}
+    for _, l in ipairs(list) do set[l] = true end
+    return set
+end
+local faulty = {3610284 ,3610285, 3610286, 3610977, 4916581, 4929708, 4929762}
+local faulty = Set(faulty)
 function DatasetLmdb:nextBatch()
     local imgW, imgH = 100, 32
     local randomIndex = torch.LongTensor(self.batchSize):random(1, self.nSamples)
+    randomIndex:apply(function(x)
+        if faulty[x] then
+            x=5
+        end
+        return x
+    end)
     local imageList, labelList = {}, {}
-
     -- load image binaries and labels
     local success, msg, rc = self.env:transaction(function(txn)
         for i = 1, self.batchSize do
@@ -108,7 +119,13 @@ function DatasetLmdb:nextBatch()
         local imageByteLen = string.len(imgBin)
         local imageBytes = torch.ByteTensor(imageByteLen):fill(0)
         imageBytes:storage():string(imgBin)
-        local img = Image.decompress(imageBytes, 3, 'byte')
+        local img = nil
+        local status, err = pcall(function() img = Image.decompress(imageBytes, 3, 'byte') end)
+        if not status then
+            print (err)
+            print (randomIndex[i])
+            os.exit()
+        end
         img = Image.rgb2y(img)
         img = Image.scale(img, imgW, imgH)
         images[i]:copy(img)
@@ -142,21 +159,22 @@ function DatasetLmdb:sanitize(startIdx, endIdx)
         local imageByteLen = string.len(imgBin)
         local imageBytes = torch.ByteTensor(imageByteLen):fill(0)
         imageBytes:storage():string(imgBin)
-        --[[
+
         local img = nil
-        local status, err = pcall(function () img = Image.decompress(imageBytes, 3, 'byte') end
+        local status, err = pcall(function () img = Image.decompress(imageBytes, 3, 'byte') end)
         if not status then
             print ('Error at: ', i + startIdx - 1, '(',startIdx, endIdx,')')
             print (err)
             faultyCount = faultyCount + 1
             faultyList[faultyCount] = i + startIdx - 1
-        else
+        --[[else
             img = Image.rgb2y(img)
             img = Image.scale(img, imgW, imgH)
             images[i]:copy(img)
-        end
         --]]
-        local img = Image.decompress(imageBytes, 3, 'byte')
+	end
+   
+        --local img = Image.decompress(imageBytes, 3, 'byte')
         -- img = Image.rgb2y(img)
         -- img = Image.scale(img, imgW, imgH)
         -- images[i]:copy(img)
