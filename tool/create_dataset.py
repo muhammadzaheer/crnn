@@ -76,7 +76,7 @@ def createDataset(outputPath, imagePathList, labelList, lexiconList=None, checkV
     print('Created dataset with %d samples' % nSamples)
 
 if __name__ == '__main__':
-    outputPath = '/opt/Synth/train'
-    imagePathList = [line.rstrip('\n') for line in open('tr_image_path_list.txt')]
-    labelList = [line.split("_")[1] for line in open("tr_image_path_list.txt")]
+    outputPath = '/opt/Synth/synthetic-plates/train_lmdb'
+    imagePathList = [line.rstrip('\n') for line in open('synth_license/license_tr_image_list.txt')]
+    labelList = [line.split("_")[1] for line in open("synth_license/license_tr_image_list.txt")]
     createDataset(outputPath, imagePathList, labelList)

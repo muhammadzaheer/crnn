@@ -21,6 +21,8 @@ function str2label(strs, maxLength)
             label = ascii - 64 + 10
         elseif ascii >= 97 and ascii <= 122 then -- 'a'-'z' are mapped to 11-36
             label = ascii - 96 + 10
+        elseif ascii == 45 then -- '-' is mapped to 37
+            label = 37 
         end
         return label
     end
@@ -56,8 +58,10 @@ function label2str(labels, raw)
             ascii = label - 1 + 48
         elseif label >= 11 and label <= 36 then
             ascii = label - 11 + 97
+        elseif label == 37 then
+            ascii = 45
         elseif label == 0 then -- used when displaying raw predictions
-            ascii = string.byte('-')
+            ascii = string.byte('*')
         end
         return ascii
     end
