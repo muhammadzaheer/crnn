@@ -8,7 +8,7 @@ require('nngraph')
 
 require('libcrnn')
 require('utilities')
-require('training')
+require('evaluating')
 require('inference')
 require('CtcCriterion')
 require('DatasetLmdb')
@@ -22,7 +22,7 @@ cutorch.setDevice(1)
 torch.setnumthreads(4)
 torch.setdefaulttensortype('torch.FloatTensor')
 local modelDir = arg[1]
-setupLogger(paths.concat(modelDir, 'log.txt'))
+setupLogger(paths.concat(modelDir, 'eval-log.txt'))
 paths.dofile(paths.concat(modelDir, 'config.lua'))
 gConfig = getConfig()
 gConfig.modelDir = modelDir
@@ -43,18 +43,10 @@ end
 
 -- load dataset
 logging('Loading datasets...')
-trainSets = {}
-for idx = 1, #gConfig.trainSetPath do
-    trainSets[idx] = DatasetLmdb(gConfig.trainSetPath[idx], gConfig.trainSetSamples[idx])
-end
-valSets = {}
-for idx = 1, #gConfig.valSetPath do
-    valSets[idx] = DatasetLmdb(gConfig.valSetPath[idx])
-end
+local testSet = DatasetLmdb(gConfig.testSetPath)
 
 -- train and test model
-logging('Start training...')
-trainModel(model, criterion, trainSets, valSets)
+logging('Start Evaluation...')
+evaluateModel(model, criterion, testSet)
 
-collectgarbage()
 shutdownLogger()

@@ -87,17 +87,20 @@ function Set (list)
     for _, l in ipairs(list) do set[l] = true end
     return set
 end
---local faulty = {3610284 ,3610285, 3610286, 3610977, 4916581, 4929708, 4929762}
---local faulty = Set(faulty)
+
+-- Hack to ignore faulty jpegs
+local faulty = {3610284 ,3610285, 3610286, 3610977, 2529060, 2529063, 5909752,
+                1582795, 383637, 383635, 3475418, 3566245, 1291088, 1848340}
+local faulty = Set(faulty)
 function DatasetLmdb:nextBatch()
     local imgW, imgH = 100, 32
     local randomIndex = torch.LongTensor(self.batchSize):random(1, self.nSamples)
-    --[[randomIndex:apply(function(x)
+    randomIndex:apply(function(x)
         if faulty[x] then
             x=5
         end
         return x
-    end)]]
+    end)
     local imageList, labelList = {}, {}
     -- load image binaries and labels
     local success, msg, rc = self.env:transaction(function(txn)

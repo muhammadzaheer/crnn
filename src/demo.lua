@@ -23,9 +23,8 @@ torch.setdefaulttensortype('torch.FloatTensor')
 
 print('Loading model...')
 local modelDir = arg[1]
-local snapshot = arg[2]
+local modelLoadPath = arg[2]
 paths.dofile(paths.concat(modelDir, 'config.lua'))
-local modelLoadPath = paths.concat(modelDir, snapshot)
 gConfig = getConfig()
 gConfig.modelDir = modelDir
 gConfig.maxT = 0

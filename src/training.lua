@@ -1,4 +1,4 @@
-function trainModel(model, criterion, trainSet, testSet)
+function trainModel(model, criterion, trainSets, testSets)
     -- get model parameters
     local params, gradParams = model:getParameters()
     local optimMethod = gConfig.optimMethod
@@ -28,13 +28,13 @@ function trainModel(model, criterion, trainSet, testSet)
         return loss
     end
 
-    function validation(input, target)
+    function validation(input, target, mode)
         --[[ Do validation
         ARGS:
           - `input`  : validation inputs
           - `target` : validation targets
         ]]
-        logging('Validating...')
+        logging(mode)
         model:evaluate()
 
         -- batch feed forward
@@ -81,13 +81,20 @@ function trainModel(model, criterion, trainSet, testSet)
     while true do
         -- validation
         if iterations == 0 or iterations % gConfig.testInterval == 0 then
-            local valInput, valTarget = testSet:allImageLabel(5000)
-            validation(valInput, valTarget)
+            for idx = 1, #testSets do
+                local valInput, valTarget = testSets[idx]:allImageLabel(5000)
+                validation(valInput, valTarget, 'Validating: ' .. gConfig.valSetNames[idx])
+            end
             collectgarbage()
         end
 
         -- train batch
-        local input, target = trainSet:nextBatch()
+        local input, target = trainSets[1]:nextBatch()
+        for idx = 2, #trainSets do
+            local inputNext, targetNext = trainSets[idx]:nextBatch()
+            input = torch.cat(input, inputNext, 1)
+            target = torch.cat(target, targetNext, 1)
+        end
         assert(input:nDimension() == 4)
         loss = loss + trainBatch(input, target)
         iterations = iterations + 1
